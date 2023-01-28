@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>次频道</title>
+</head>
+
+<body>
+    <div id="imgDiv"></div>
+    <script>
+        // 普通脚本
+        /** @type {HTMLDivElement} 注解 */
+        let div = document.getElementById("imgDiv")
+        for (let i = 1; i < 7; i++) {
+            let name = `${i}.jpg`
+            let img = new Image()
+            img.src = `./${name}`
+            img.style.width = "50px"
+            img.style.height = "50px"
+            div.append(img)
+        }
+    </script>
+    <script>
+        // 油猴脚本
+        // window.close()
+        let dbName = "corss_channel"
+        let storeName = "imgList"
+        let request = window.indexedDB.open("corss_channel", 1)
+        /** @type {IDBDatabase} 注解 */
+        let db
+        request.onupgradeneeded = (event) => {
+            db = request.result
+            if (!db.objectStoreNames.contains(storeName)) {
+                // 创建存储库
+                db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true })
+            }
+        }
+        request.onerror = (event) => {
+            console.warn(event)
+        }
+        request.onsuccess = (event) => {
+            db = request.result
+            // let store=db.objectStoreNames.
+        }
+
+    </script>
+</body>
+
+</html>

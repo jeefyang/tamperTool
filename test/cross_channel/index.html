@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主频道</title>
+</head>
+
+<body>
+    <button id="btn">打开</button>
+    <script>
+        // 普通脚本
+        /** @type {HTMLButtonElement} 注解 */
+        let btn = document.getElementById("btn")
+        btn.onclick = () => {
+            let myWin = window.open("./other.html")
+        }
+    </script>
+    <script>
+        // 油猴脚本
+        setTimeout(() => {
+            /** @type {HTMLButtonElement} 注解 */
+            let btn = document.getElementById("btn")
+            console.log(btn)
+            // btn.click()
+        }, 1000);
+
+
+
+
+    </script>
+</body>
+
+</html>
