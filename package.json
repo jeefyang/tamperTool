@@ -1,0 +1,23 @@
+{
+  "name": "tampertool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "live":"live-server --port=8211"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeefyang/tamperTool.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jeefyang/tamperTool/issues"
+  },
+  "homepage": "https://github.com/jeefyang/tamperTool#readme"
+}

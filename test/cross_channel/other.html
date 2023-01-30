@@ -43,6 +43,7 @@
         }
         request.onsuccess = (event) => {
             db = request.result
+            db.storeName()
             // let store=db.objectStoreNames.
         }
 
