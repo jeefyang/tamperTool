@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "live":"live-server --port=8211"
+    "live":"live-server --port=8211",
+    "watch":"tsc -w -p tsconfig.json"
   },
   "repository": {
     "type": "git",

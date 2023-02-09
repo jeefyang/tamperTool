@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        // 使用全局类型的模式必须为system
+        "module": "system",
+        //允许any类型,降低开发难度
+        "noImplicitAny": true,
+        // 是否删除编译后的注释
+        "removeComments": false,
+        // 保留 const和 enum声明
+        "preserveConstEnums": true,
+        "outDir": "./debug",
+        // 需要编译成的版本
+        "target": "ES6",
+        // 是否需要生成d.ts文件
+        "declaration": true,
+        "skipLibCheck": true,
+        "checkJs": true
+    },
+    // 要编译的文件
+    "include": [
+        "./src/**/*.ts"
+    ]
+}
