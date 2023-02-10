@@ -8,16 +8,16 @@
         "removeComments": false,
         // 保留 const和 enum声明
         "preserveConstEnums": true,
-        "outDir": "./debug",
         // 需要编译成的版本
         "target": "ES6",
         // 是否需要生成d.ts文件
         "declaration": true,
         "skipLibCheck": true,
-        "checkJs": true
+        "allowJs": true
     },
     // 要编译的文件
     "include": [
-        "./src/**/*.ts"
+        "./src/**/*.ts",
+        "./test/**/*"
     ]
 }

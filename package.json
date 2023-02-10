@@ -8,13 +8,15 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "live":"live-server --port=8211",
-    "watch":"tsc -w -p tsconfig.json"
+    "live": "live-server --port=8211",
+    "watch_debug": "tsc -w -p tsconfig.debug.json",
+    "build": "tsc -p tsconfig.build.json"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jeefyang/tamperTool.git"
   },
+  "typings": "./types/type.d.ts",
   "author": "",
   "license": "ISC",
   "bugs": {

@@ -1,7 +1,7 @@
 type CrossChannel_InitData = {
     list: {
         id: string
-        isDone: false
+        isDone: boolean
         imgList:string[]
     }[]
 }

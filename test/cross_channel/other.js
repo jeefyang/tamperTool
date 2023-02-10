@@ -18,7 +18,7 @@ let storeName = "imgList"
 /** 
   * @param {CrossChannel_InitData} [data] 注解
   */
-let successCB = (data) => {
+function successCB(data) {
     data.list[0].imgList = list
     data.list[0].isDone = true
     return data
