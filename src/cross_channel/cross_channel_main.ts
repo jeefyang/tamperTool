@@ -4,9 +4,9 @@
 function CrossChannelMain<T>(
     op: {
         /** 库名 */
-        dbName: string
+        dbName?: string
         /** 表名 */
-        storeName: string
+        storeName?: string
         /** 版本 */
         version?: number
         /** 初始化数据 */
@@ -19,33 +19,52 @@ function CrossChannelMain<T>(
         rollFinish: (data: T) => void
         /** 最大轮询 */
         maxRoll: number
+        /** 是否不初始化数据 */
+        isNoInit?: boolean
+        type: "indexedDB" | "localStorage" | "GM"
+        /** 本地存储名 */
+        localStorageValName?: string
     }
 ) {
     if (op.maxRoll == undefined) {
         op.maxRoll = -1
     }
-    let request = window.indexedDB.open(op.dbName, op.version || 1)
+    let request: IDBOpenDBRequest
     let db: IDBDatabase
-    request.onupgradeneeded = (event) => {
-        db = request.result
-        if (!db.objectStoreNames.contains(op.storeName)) {
-            // 创建存储库
-            db.createObjectStore(op.storeName, { keyPath: "id", autoIncrement: true })
-        }
-    }
-    request.onerror = (event) => {
-        console.warn(event)
-    }
-    request.onsuccess = async (ev) => {
-        db = request.result
-        await clearFunc()
-        await initFunc()
-        rollFunc()
 
+    let getLocalStorageValFunc = (): T => {
+        let dataStr: string
+        if (op.type == "localStorage") {
+            dataStr = localStorage.getItem(op.localStorageValName)
+        }
+        else if (op.type == "GM") {
+            dataStr = GM_getValue(op.localStorageValName)
+        }
+        if (dataStr) {
+            return <T>JSON.parse(dataStr)
+        }
+        console.warn("接口不对")
+        return undefined
     }
-    /** 清空大法 */
-    let clearFunc = () => {
+
+    let setLocalStorageValFunc = (val: T) => {
+        if (op.type == "localStorage") {
+            return localStorage.setItem(op.localStorageValName, JSON.stringify(val))
+        }
+        else if (op.type == "GM") {
+            return GM_setValue(op.localStorageValName, JSON.stringify(val))
+        }
+        console.warn("接口不对")
+        return
+    }
+
+    /** 异步清空大法,indexedDB专用 */
+    let clearIndexedDBFunc = () => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对")
+                rej()
+            }
             let trans = db.transaction([op.storeName], "readwrite")
             let store = trans.objectStore(op.storeName)
             let res = store.clear()
@@ -61,13 +80,17 @@ function CrossChannelMain<T>(
         })
     }
 
-    /** 初始化大法 */
-    let initFunc = () => {
+    /** 异步初始化大法,,indexedDB专用 */
+    let initIndexedDBFunc = () => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对")
+                rej()
+            }
             let trans = db.transaction([op.storeName], "readwrite")
             let store = trans.objectStore(op.storeName)
             console.log(JSON.stringify(op.initData))
-            let res = store.add({ val: JSON.stringify(op.initData),id:1 })
+            let res = store.add({ val: JSON.stringify(op.initData), id: 1 })
             res.onerror = () => {
                 console.warn("数据初始化失败")
                 db.close()
@@ -88,8 +111,13 @@ function CrossChannelMain<T>(
         console.log("完成捕捉")
     }
 
-    let getValFunc = (): Promise<T> => {
+    /** 获取大法,indexedDB专用 */
+    let getIndexedDBValFunc = (): Promise<T> => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对")
+                rej()
+            }
             let trans = db.transaction([op.storeName])
             let store = trans.objectStore(op.storeName)
             let res = store.get(1)
@@ -112,8 +140,13 @@ function CrossChannelMain<T>(
         })
     }
 
-    let setValFunc = (data: T): Promise<any> => {
+    /** 设置大法,indexedDB专用 */
+    let SetIndexedDBValFunc = (data: T): Promise<any> => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对")
+                rej()
+            }
             let trans = db.transaction([op.storeName], "readwrite")
             let store = trans.objectStore(op.storeName)
             let res = store.put({ val: JSON.stringify(data), id: 1 })
@@ -129,15 +162,32 @@ function CrossChannelMain<T>(
         })
     }
 
-    /** 一次轮询大法 */
-    let oneRollFunc = async (): Promise<{ val: T, c: boolean }> => {
-        let val = await getValFunc()
+    /** 异步一次轮询大法,indexedDB专用 */
+    let OneRollIndexedDBFunc = async (): Promise<{ val: T, c: boolean }> => {
+        if (op.type != 'indexedDB') {
+            console.warn("接口不对")
+            throw ("接口不对")
+        }
+        let val = await getIndexedDBValFunc()
         let data = op.rollCB(val)
         if (typeof data == "boolean") {
             return { val: val, c: data }
         }
         else {
-            await setValFunc(data.val)
+            await SetIndexedDBValFunc(data.val)
+            return { val: data.val, c: data.c }
+        }
+    }
+
+    /** 一次轮询大法 */
+    let oneRollLocalStorageFunc = () => {
+        let val = getLocalStorageValFunc()
+        let data = op.rollCB(val)
+        if (typeof data == "boolean") {
+            return { val: val, c: data }
+        }
+        else {
+            setLocalStorageValFunc(data.val)
             return { val: data.val, c: data.c }
         }
     }
@@ -150,18 +200,59 @@ function CrossChannelMain<T>(
             finishFunc()
             return
         }
+
         setTimeout(() => {
-            oneRollFunc().then(o => {
+            if (op.type == "indexedDB") {
+                OneRollIndexedDBFunc().then(o => {
+                    if (o.c) {
+                        op.rollFinish(o.val)
+                        finishFunc()
+                    }
+                    else {
+                        op.maxRoll--
+                        rollFunc()
+                    }
+                })
+            }
+            else {
+                let o = oneRollLocalStorageFunc()
                 if (o.c) {
                     op.rollFinish(o.val)
                     finishFunc()
                 }
                 else {
                     op.maxRoll--
-                    console.log("xx")
                     rollFunc()
                 }
-            })
+            }
         }, op.rollTime);
+    }
+
+    if (op.type == "indexedDB") {
+        request = window.indexedDB.open(op.dbName, op.version || 1)
+        request.onupgradeneeded = (event) => {
+            db = request.result
+            if (!db.objectStoreNames.contains(op.storeName)) {
+                // 创建存储库
+                db.createObjectStore(op.storeName, { keyPath: "id", autoIncrement: true })
+            }
+        }
+        request.onerror = (event) => {
+            console.warn(event)
+        }
+        request.onsuccess = async (ev) => {
+            db = request.result
+            if (!op.isNoInit) {
+                await clearIndexedDBFunc()
+                await initIndexedDBFunc()
+            }
+            rollFunc()
+        }
+    }
+    else {
+        if (!op.isNoInit) {
+            setLocalStorageValFunc(op.initData)
+        }
+        rollFunc()
     }
 }

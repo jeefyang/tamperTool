@@ -30,14 +30,27 @@ btn.addEventListener("click", () => {
     return !isNoDone
   }
   initData.list[0][""]
-  CrossChannelMain({
-    dbName: "corss_channel",
-    storeName: "imgList",
-    initData: initData,
-    rollTime: 1000,
-    rollCB: rollFunc,
-    rollFinish: () => {
-      console.log("完成")
-    },
-  })
+  // CrossChannelMain({
+  //   dbName: "corss_channel",
+  //   storeName: "imgList",
+  //   initData: initData,
+  //   rollTime: 1000,
+  //   rollCB: rollFunc,
+  //   rollFinish: () => {
+  //     console.log("完成")
+  //   },
+  // })
+  setTimeout(() => {
+    CrossChannelPostMain({
+      win:window,
+      rollTime: 1000,
+      initData,
+      rollCB: rollFunc,
+      rollFinish: () => {
+        console.log("完成")
+      },
+      postUrl:"*"
+    })
+  }, 2000);
+  
 });

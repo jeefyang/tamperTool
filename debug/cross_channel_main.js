@@ -28,8 +28,10 @@ function CrossChannelMain(op) {
     };
     request.onsuccess = (ev) => __awaiter(this, void 0, void 0, function* () {
         db = request.result;
-        yield clearFunc();
-        yield initFunc();
+        if (!op.isNoInit) {
+            yield clearFunc();
+            yield initFunc();
+        }
         rollFunc();
     });
     /** 清空大法 */

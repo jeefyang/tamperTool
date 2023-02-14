@@ -26,8 +26,14 @@ function successCB(data) {
 let finishCB = () => {
     window.close()
 }
-CrossChannelOther({
-    dbName, storeName,
+// CrossChannelOther({
+//     dbName, storeName,
+//     successCB,
+//     finishCB
+// })
+CrossChannelPostOther({
+    win: window,
     successCB,
-    finishCB
+    finishCB,
+    postUrl:"*"
 })

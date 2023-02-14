@@ -21,4 +21,6 @@ declare function CrossChannelMain<T>(op: {
     rollFinish: (data: T) => void;
     /** 最大轮询 */
     maxRoll: number;
+    /** 是否不初始化数据 */
+    isNoInit?: boolean;
 }): void;

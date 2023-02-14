@@ -10,10 +10,13 @@ function CrossChannelOther<T>(
         /** 加载成功回调 */
         successCB: (data: T) => T
         /** 最后完成回调 */
-        finishCB?: () => void
+        finishCB?: () => void,
+        type: "indexedDB" | "localStorage" | "GM"
+        /** 本地存储名 */
+        localStorageValName?: string
     }
 ) {
-    let request = window.indexedDB.open(op.dbName, op.version || 1)
+    let request: IDBOpenDBRequest = window.indexedDB.open(op.dbName, op.version || 1)
     let db: IDBDatabase
     let setValFunc = (data: T): Promise<any> => {
         return new Promise((resolve, rej) => {
