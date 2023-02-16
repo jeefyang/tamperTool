@@ -27,10 +27,10 @@ function CrossChannelOther(op) {
     };
     let setLocalStorageValFunc = (val) => {
         if (op.type == "localStorage") {
-            return localStorage.setItem(op.localStorageValName, JSON.stringify(val));
+            return localStorage.setItem(op.localStorageValName, val ? JSON.stringify(val) : "");
         }
         else if (op.type == "GM") {
-            return GM_setValue(op.localStorageValName, JSON.stringify(val));
+            return GM_setValue(op.localStorageValName, val ? JSON.stringify(val) : "");
         }
         console.warn("接口不对");
         return;
@@ -59,7 +59,7 @@ function CrossChannelOther(op) {
                     db.close();
                     rej();
                 }
-                let val = JSON.parse(valStr);
+                let val = valStr ? JSON.parse(valStr) : undefined;
                 resolve(val);
             };
         });
@@ -101,7 +101,9 @@ function CrossChannelOther(op) {
             db = request.result;
             let val = yield getIndexedDBValFunc();
             let newVal = op.successCB(val);
-            yield SetIndexedDBValFunc(newVal);
+            if (newVal) {
+                yield SetIndexedDBValFunc(newVal);
+            }
             db.close();
             if (op.finishCB) {
                 op.finishCB();
@@ -111,7 +113,9 @@ function CrossChannelOther(op) {
     else {
         let val = getLocalStorageValFunc();
         let newVal = op.successCB(val);
-        setLocalStorageValFunc(newVal);
+        if (newVal) {
+            setLocalStorageValFunc(newVal);
+        }
         if (op.finishCB) {
             op.finishCB();
         }

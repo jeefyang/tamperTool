@@ -7,10 +7,11 @@ function CrossChannelOther<T>(
         storeName?: string
         /** 版本 */
         version?: number
-        /** 加载成功回调 */
+        /** 加载成功回调,如果返回undefined,数据不会进一步保存 */
         successCB: (data: T) => T
         /** 最后完成回调 */
         finishCB?: () => void,
+        /** 存储类型 */
         type: "indexedDB" | "localStorage" | "GM"
         /** 本地存储名 */
         localStorageValName?: string
@@ -35,10 +36,10 @@ function CrossChannelOther<T>(
 
     let setLocalStorageValFunc = (val: T) => {
         if (op.type == "localStorage") {
-            return localStorage.setItem(op.localStorageValName, JSON.stringify(val))
+            return localStorage.setItem(op.localStorageValName, val ? JSON.stringify(val) : "")
         }
         else if (op.type == "GM") {
-            return GM_setValue(op.localStorageValName, JSON.stringify(val))
+            return GM_setValue(op.localStorageValName, val ? JSON.stringify(val) : "")
         }
         console.warn("接口不对")
         return
@@ -66,7 +67,7 @@ function CrossChannelOther<T>(
                     db.close()
                     rej()
                 }
-                let val: T = JSON.parse(valStr)
+                let val: T = valStr ? JSON.parse(valStr) : undefined
                 resolve(val)
             }
         })
@@ -110,7 +111,9 @@ function CrossChannelOther<T>(
             db = request.result
             let val = await getIndexedDBValFunc()
             let newVal = op.successCB(val)
-            await SetIndexedDBValFunc(newVal)
+            if (newVal) {
+                await SetIndexedDBValFunc(newVal)
+            }
             db.close()
             if (op.finishCB) {
                 op.finishCB()
@@ -120,7 +123,9 @@ function CrossChannelOther<T>(
     else {
         let val = getLocalStorageValFunc()
         let newVal = op.successCB(val)
-        setLocalStorageValFunc(newVal)
+        if (newVal) {
+            setLocalStorageValFunc(newVal)
+        }
         if (op.finishCB) {
             op.finishCB()
         }

@@ -43,6 +43,20 @@ btn.addEventListener("click", () => {
       }
       if (c.isDone) {
         console.log(c.imgList)
+        if (!c.isAppendImg) {
+          let tr = document.createElement("tr")
+          for (let j = 0; j < c.imgList.length; j++) {
+            let img = document.createElement("img")
+            img.src = c.imgList[j]
+            img.setAttribute("width", "100px")
+            img.setAttribute("height", "auto")
+            tr.append(img)
+          }
+          let parent = aList[i].parentElement.parentElement
+          parent.parentElement.insertBefore(tr, parent)
+          c.isAppendImg = true
+        }
+
       }
       isNoDone = isNoDone || !c.isDone
     }
@@ -68,6 +82,7 @@ btn.addEventListener("click", () => {
     rollCB: rollFunc,
     type: "localStorage",
     localStorageValName: "test",
+    isFinishClear: true,
     rollFinish: (data) => {
       console.log(data)
       console.log("完成")

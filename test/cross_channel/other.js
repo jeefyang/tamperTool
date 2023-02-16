@@ -20,6 +20,9 @@ let isOK = false
   * @param {CrossChannel_InitData} [data] 注解
   */
 function successCB(data) {
+    if (!data) {
+        return
+    }
     let child = data.list.find(c => {
         return location.href.indexOf(c.id) != -1
     })

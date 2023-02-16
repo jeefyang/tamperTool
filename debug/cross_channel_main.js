@@ -16,6 +16,7 @@ function CrossChannelMain(op) {
     }
     let request;
     let db;
+    /** 获取本地存储大法 */
     let getLocalStorageValFunc = () => {
         let dataStr;
         if (op.type == "localStorage") {
@@ -30,12 +31,13 @@ function CrossChannelMain(op) {
         console.warn("接口不对");
         return undefined;
     };
+    /** 设置本地存储大法 */
     let setLocalStorageValFunc = (val) => {
         if (op.type == "localStorage") {
-            return localStorage.setItem(op.localStorageValName, JSON.stringify(val));
+            return localStorage.setItem(op.localStorageValName, val ? JSON.stringify(val) : "");
         }
         else if (op.type == "GM") {
-            return GM_setValue(op.localStorageValName, JSON.stringify(val));
+            return GM_setValue(op.localStorageValName, val ? JSON.stringify(val) : "");
         }
         console.warn("接口不对");
         return;
@@ -174,6 +176,14 @@ function CrossChannelMain(op) {
             console.warn("超出轮询次数退出");
             op.rollFinish(undefined);
             finishFunc();
+            if (op.isFinishClear) {
+                if (op.type == "indexedDB") {
+                    clearIndexedDBFunc();
+                }
+                else {
+                    setLocalStorageValFunc(undefined);
+                }
+            }
             return;
         }
         setTimeout(() => {
@@ -182,6 +192,9 @@ function CrossChannelMain(op) {
                     if (o.c) {
                         op.rollFinish(o.val);
                         finishFunc();
+                        if (op.isFinishClear) {
+                            clearIndexedDBFunc();
+                        }
                     }
                     else {
                         op.maxRoll--;
@@ -194,6 +207,9 @@ function CrossChannelMain(op) {
                 if (o.c) {
                     op.rollFinish(o.val);
                     finishFunc();
+                    if (op.isFinishClear) {
+                        setLocalStorageValFunc(undefined);
+                    }
                 }
                 else {
                     op.maxRoll--;

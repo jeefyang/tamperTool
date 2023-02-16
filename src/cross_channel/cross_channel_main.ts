@@ -17,10 +17,13 @@ function CrossChannelMain<T>(
         rollCB: (data: T) => boolean | { val: T, c: boolean }
         /** 轮询结束回调 */
         rollFinish: (data: T) => void
+        /** 完成后是否清除数据 */
+        isFinishClear?: boolean
         /** 最大轮询 */
         maxRoll: number
         /** 是否不初始化数据 */
         isNoInit?: boolean
+        /** 存储类型 */
         type: "indexedDB" | "localStorage" | "GM"
         /** 本地存储名 */
         localStorageValName?: string
@@ -32,6 +35,7 @@ function CrossChannelMain<T>(
     let request: IDBOpenDBRequest
     let db: IDBDatabase
 
+    /** 获取本地存储大法 */
     let getLocalStorageValFunc = (): T => {
         let dataStr: string
         if (op.type == "localStorage") {
@@ -47,12 +51,13 @@ function CrossChannelMain<T>(
         return undefined
     }
 
+    /** 设置本地存储大法 */
     let setLocalStorageValFunc = (val: T) => {
         if (op.type == "localStorage") {
-            return localStorage.setItem(op.localStorageValName, JSON.stringify(val))
+            return localStorage.setItem(op.localStorageValName, val ? JSON.stringify(val) : "")
         }
         else if (op.type == "GM") {
-            return GM_setValue(op.localStorageValName, JSON.stringify(val))
+            return GM_setValue(op.localStorageValName, val ? JSON.stringify(val) : "")
         }
         console.warn("接口不对")
         return
@@ -198,6 +203,14 @@ function CrossChannelMain<T>(
             console.warn("超出轮询次数退出")
             op.rollFinish(undefined)
             finishFunc()
+            if (op.isFinishClear) {
+                if (op.type == "indexedDB") {
+                    clearIndexedDBFunc()
+                }
+                else {
+                    setLocalStorageValFunc(undefined)
+                }
+            }
             return
         }
 
@@ -207,6 +220,9 @@ function CrossChannelMain<T>(
                     if (o.c) {
                         op.rollFinish(o.val)
                         finishFunc()
+                        if (op.isFinishClear) {
+                            clearIndexedDBFunc()
+                        }
                     }
                     else {
                         op.maxRoll--
@@ -219,6 +235,9 @@ function CrossChannelMain<T>(
                 if (o.c) {
                     op.rollFinish(o.val)
                     finishFunc()
+                    if (op.isFinishClear) {
+                        setLocalStorageValFunc(undefined)
+                    }
                 }
                 else {
                     op.maxRoll--

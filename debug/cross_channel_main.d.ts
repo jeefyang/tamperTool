@@ -19,10 +19,13 @@ declare function CrossChannelMain<T>(op: {
     };
     /** 轮询结束回调 */
     rollFinish: (data: T) => void;
+    /** 完成后是否清除数据 */
+    isFinishClear?: boolean;
     /** 最大轮询 */
     maxRoll: number;
     /** 是否不初始化数据 */
     isNoInit?: boolean;
+    /** 存储类型 */
     type: "indexedDB" | "localStorage" | "GM";
     /** 本地存储名 */
     localStorageValName?: string;
