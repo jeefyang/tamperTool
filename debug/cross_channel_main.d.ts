@@ -3,9 +3,9 @@
  */
 declare function CrossChannelMain<T>(op: {
     /** 库名 */
-    dbName: string;
+    dbName?: string;
     /** 表名 */
-    storeName: string;
+    storeName?: string;
     /** 版本 */
     version?: number;
     /** 初始化数据 */
@@ -23,4 +23,7 @@ declare function CrossChannelMain<T>(op: {
     maxRoll: number;
     /** 是否不初始化数据 */
     isNoInit?: boolean;
+    type: "indexedDB" | "localStorage" | "GM";
+    /** 本地存储名 */
+    localStorageValName?: string;
 }): void;

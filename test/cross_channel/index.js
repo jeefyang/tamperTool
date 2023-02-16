@@ -2,7 +2,7 @@
 /** @type {HTMLButtonElement} 注解 */
 let btn = document.getElementById("btn")
 btn.addEventListener("click", () => {
-  let myWin = window.open("./other.html")
+  // let myWin = window.open("./other.html")
 })
 
 
@@ -12,45 +12,78 @@ btn.addEventListener("click", () => {
 btn.addEventListener("click", () => {
   /** @type {HTMLButtonElement} 注解 */
   let btn = document.getElementById("btn")
-  console.log(btn)
   /** @type {CrossChannel_InitData} 注解 */
   let initData = {
-    list: [{ id: "xx", imgList: [], isDone: false }]
+    list: [],
+    isCloseing: false
   }
+  let tableList = document.getElementsByTagName("table")
+  let aList = tableList[0].getElementsByTagName("a")
+  console.log(tableList)
+  for (let i = 0; i < aList.length; i++) {
+    initData.list.push({ id: aList[i].href, imgList: [], isDone: false })
+  }
+  console.log(initData)
+  // return
+
   /** 
    * @param {CrossChannel_InitData} [data] 注解
    */
   let rollFunc = (data) => {
+    if (!data.isCloseing) {
+      return false
+    }
     let isNoDone = false
+    /** @type {string} 注解 */
+    let noDoneID
     for (let i = 0; i < data.list.length; i++) {
       let c = data.list[i]
-      console.log(c.imgList)
+      if (!noDoneID && !c.isDone) {
+        noDoneID = c.id
+      }
+      if (c.isDone) {
+        console.log(c.imgList)
+      }
       isNoDone = isNoDone || !c.isDone
     }
-    return !isNoDone
+    console.log(noDoneID)
+    if (noDoneID) {
+      for (let i = 0; i < aList.length; i++) {
+        if (noDoneID.indexOf(aList[i].href) != -1) {
+          document.body.focus()
+          aList[i].click()
+          break
+        }
+      }
+    }
+    data.isCloseing = false
+    return { c: !isNoDone, val: data }
   }
   initData.list[0][""]
-  // CrossChannelMain({
-  //   dbName: "corss_channel",
-  //   storeName: "imgList",
-  //   initData: initData,
-  //   rollTime: 1000,
-  //   rollCB: rollFunc,
-  //   rollFinish: () => {
-  //     console.log("完成")
-  //   },
-  // })
-  setTimeout(() => {
-    CrossChannelPostMain({
-      win:window,
-      rollTime: 1000,
-      initData,
-      rollCB: rollFunc,
-      rollFinish: () => {
-        console.log("完成")
-      },
-      postUrl:"*"
-    })
-  }, 2000);
-  
+  CrossChannelMain({
+    dbName: "corss_channel",
+    storeName: "imgList",
+    initData: initData,
+    rollTime: 1000,
+    rollCB: rollFunc,
+    type: "localStorage",
+    localStorageValName: "test",
+    rollFinish: (data) => {
+      console.log(data)
+      console.log("完成")
+    },
+  })
+  // setTimeout(() => {
+  //   CrossChannelPostMain({
+  //     win:window,
+  //     rollTime: 1000,
+  //     initData,
+  //     rollCB: rollFunc,
+  //     rollFinish: () => {
+  //       console.log("完成")
+  //     },
+  //     postUrl:"*"
+  //   })
+  // }, 2000);
+  aList[0].click()
 });

@@ -14,29 +14,39 @@ function CrossChannelMain(op) {
     if (op.maxRoll == undefined) {
         op.maxRoll = -1;
     }
-    let request = window.indexedDB.open(op.dbName, op.version || 1);
+    let request;
     let db;
-    request.onupgradeneeded = (event) => {
-        db = request.result;
-        if (!db.objectStoreNames.contains(op.storeName)) {
-            // 创建存储库
-            db.createObjectStore(op.storeName, { keyPath: "id", autoIncrement: true });
+    let getLocalStorageValFunc = () => {
+        let dataStr;
+        if (op.type == "localStorage") {
+            dataStr = localStorage.getItem(op.localStorageValName);
         }
-    };
-    request.onerror = (event) => {
-        console.warn(event);
-    };
-    request.onsuccess = (ev) => __awaiter(this, void 0, void 0, function* () {
-        db = request.result;
-        if (!op.isNoInit) {
-            yield clearFunc();
-            yield initFunc();
+        else if (op.type == "GM") {
+            dataStr = GM_getValue(op.localStorageValName);
         }
-        rollFunc();
-    });
-    /** 清空大法 */
-    let clearFunc = () => {
+        if (dataStr) {
+            return JSON.parse(dataStr);
+        }
+        console.warn("接口不对");
+        return undefined;
+    };
+    let setLocalStorageValFunc = (val) => {
+        if (op.type == "localStorage") {
+            return localStorage.setItem(op.localStorageValName, JSON.stringify(val));
+        }
+        else if (op.type == "GM") {
+            return GM_setValue(op.localStorageValName, JSON.stringify(val));
+        }
+        console.warn("接口不对");
+        return;
+    };
+    /** 异步清空大法,indexedDB专用 */
+    let clearIndexedDBFunc = () => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对");
+                rej();
+            }
             let trans = db.transaction([op.storeName], "readwrite");
             let store = trans.objectStore(op.storeName);
             let res = store.clear();
@@ -51,9 +61,13 @@ function CrossChannelMain(op) {
             };
         });
     };
-    /** 初始化大法 */
-    let initFunc = () => {
+    /** 异步初始化大法,,indexedDB专用 */
+    let initIndexedDBFunc = () => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对");
+                rej();
+            }
             let trans = db.transaction([op.storeName], "readwrite");
             let store = trans.objectStore(op.storeName);
             console.log(JSON.stringify(op.initData));
@@ -76,8 +90,13 @@ function CrossChannelMain(op) {
         }
         console.log("完成捕捉");
     };
-    let getValFunc = () => {
+    /** 获取大法,indexedDB专用 */
+    let getIndexedDBValFunc = () => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对");
+                rej();
+            }
             let trans = db.transaction([op.storeName]);
             let store = trans.objectStore(op.storeName);
             let res = store.get(1);
@@ -100,8 +119,13 @@ function CrossChannelMain(op) {
             };
         });
     };
-    let setValFunc = (data) => {
+    /** 设置大法,indexedDB专用 */
+    let SetIndexedDBValFunc = (data) => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对");
+                rej();
+            }
             let trans = db.transaction([op.storeName], "readwrite");
             let store = trans.objectStore(op.storeName);
             let res = store.put({ val: JSON.stringify(data), id: 1 });
@@ -116,18 +140,34 @@ function CrossChannelMain(op) {
             };
         });
     };
-    /** 一次轮询大法 */
-    let oneRollFunc = () => __awaiter(this, void 0, void 0, function* () {
-        let val = yield getValFunc();
+    /** 异步一次轮询大法,indexedDB专用 */
+    let OneRollIndexedDBFunc = () => __awaiter(this, void 0, void 0, function* () {
+        if (op.type != 'indexedDB') {
+            console.warn("接口不对");
+            throw ("接口不对");
+        }
+        let val = yield getIndexedDBValFunc();
         let data = op.rollCB(val);
         if (typeof data == "boolean") {
             return { val: val, c: data };
         }
         else {
-            yield setValFunc(data.val);
+            yield SetIndexedDBValFunc(data.val);
             return { val: data.val, c: data.c };
         }
     });
+    /** 一次轮询大法 */
+    let oneRollLocalStorageFunc = () => {
+        let val = getLocalStorageValFunc();
+        let data = op.rollCB(val);
+        if (typeof data == "boolean") {
+            return { val: val, c: data };
+        }
+        else {
+            setLocalStorageValFunc(data.val);
+            return { val: data.val, c: data.c };
+        }
+    };
     /** 轮询大法 */
     let rollFunc = () => {
         if (!op.maxRoll) {
@@ -137,17 +177,56 @@ function CrossChannelMain(op) {
             return;
         }
         setTimeout(() => {
-            oneRollFunc().then(o => {
+            if (op.type == "indexedDB") {
+                OneRollIndexedDBFunc().then(o => {
+                    if (o.c) {
+                        op.rollFinish(o.val);
+                        finishFunc();
+                    }
+                    else {
+                        op.maxRoll--;
+                        rollFunc();
+                    }
+                });
+            }
+            else {
+                let o = oneRollLocalStorageFunc();
                 if (o.c) {
                     op.rollFinish(o.val);
                     finishFunc();
                 }
                 else {
                     op.maxRoll--;
-                    console.log("xx");
                     rollFunc();
                 }
-            });
+            }
         }, op.rollTime);
     };
+    if (op.type == "indexedDB") {
+        request = window.indexedDB.open(op.dbName, op.version || 1);
+        request.onupgradeneeded = (event) => {
+            db = request.result;
+            if (!db.objectStoreNames.contains(op.storeName)) {
+                // 创建存储库
+                db.createObjectStore(op.storeName, { keyPath: "id", autoIncrement: true });
+            }
+        };
+        request.onerror = (event) => {
+            console.warn(event);
+        };
+        request.onsuccess = (ev) => __awaiter(this, void 0, void 0, function* () {
+            db = request.result;
+            if (!op.isNoInit) {
+                yield clearIndexedDBFunc();
+                yield initIndexedDBFunc();
+            }
+            rollFunc();
+        });
+    }
+    else {
+        if (!op.isNoInit) {
+            setLocalStorageValFunc(op.initData);
+        }
+        rollFunc();
+    }
 }

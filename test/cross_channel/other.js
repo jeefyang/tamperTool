@@ -15,25 +15,38 @@ for (let i = 0; i < target.children.length; i++) {
 
 let dbName = "corss_channel"
 let storeName = "imgList"
+let isOK = false
 /** 
   * @param {CrossChannel_InitData} [data] 注解
   */
 function successCB(data) {
-    data.list[0].imgList = list
-    data.list[0].isDone = true
+    let child = data.list.find(c => {
+        return location.href.indexOf(c.id) != -1
+    })
+    if (child) {
+        child.imgList = list
+        child.isDone = true
+        isOK = true
+        data.isCloseing = true
+    }
+    console.log(data)
     return data
 }
 let finishCB = () => {
-    window.close()
+    if (isOK) {
+        window.close()
+    }
 }
-// CrossChannelOther({
-//     dbName, storeName,
-//     successCB,
-//     finishCB
-// })
-CrossChannelPostOther({
-    win: window,
+CrossChannelOther({
+    dbName, storeName,
     successCB,
     finishCB,
-    postUrl:"*"
+    type: "localStorage",
+    localStorageValName: "test",
 })
+// CrossChannelPostOther({
+//     win: window,
+//     successCB,
+//     finishCB,
+//     postUrl:"*"
+// })

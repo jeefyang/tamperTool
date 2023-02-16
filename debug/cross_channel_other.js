@@ -9,10 +9,68 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 /** 跨域交流副逻辑 */
 function CrossChannelOther(op) {
-    let request = window.indexedDB.open(op.dbName, op.version || 1);
+    let request;
     let db;
-    let setValFunc = (data) => {
+    let getLocalStorageValFunc = () => {
+        let dataStr;
+        if (op.type == "localStorage") {
+            dataStr = localStorage.getItem(op.localStorageValName);
+        }
+        else if (op.type == "GM") {
+            dataStr = GM_getValue(op.localStorageValName);
+        }
+        if (dataStr) {
+            return JSON.parse(dataStr);
+        }
+        console.warn("接口不对");
+        return undefined;
+    };
+    let setLocalStorageValFunc = (val) => {
+        if (op.type == "localStorage") {
+            return localStorage.setItem(op.localStorageValName, JSON.stringify(val));
+        }
+        else if (op.type == "GM") {
+            return GM_setValue(op.localStorageValName, JSON.stringify(val));
+        }
+        console.warn("接口不对");
+        return;
+    };
+    /** 获取大法,indexedDB专用 */
+    let getIndexedDBValFunc = () => {
         return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对");
+                rej();
+            }
+            let trans = db.transaction([op.storeName]);
+            let store = trans.objectStore(op.storeName);
+            let res = store.get(1);
+            res.onerror = () => {
+                console.warn("数据获取失败");
+                db.close();
+                rej();
+            };
+            res.onsuccess = () => {
+                var _a;
+                console.log("数据获取成功");
+                let valStr = (_a = res === null || res === void 0 ? void 0 : res.result) === null || _a === void 0 ? void 0 : _a.val;
+                if (!valStr) {
+                    console.warn("数据解析失败");
+                    db.close();
+                    rej();
+                }
+                let val = JSON.parse(valStr);
+                resolve(val);
+            };
+        });
+    };
+    /** 设置大法,indexedDB专用 */
+    let SetIndexedDBValFunc = (data) => {
+        return new Promise((resolve, rej) => {
+            if (op.type != 'indexedDB') {
+                console.warn("接口不对");
+                rej();
+            }
             let trans = db.transaction([op.storeName], "readwrite");
             let store = trans.objectStore(op.storeName);
             let res = store.put({ val: JSON.stringify(data), id: 1 });
@@ -27,41 +85,35 @@ function CrossChannelOther(op) {
             };
         });
     };
-    request.onupgradeneeded = (event) => {
-        db = request.result;
-        if (!db.objectStoreNames.contains(op.storeName)) {
-            // 创建存储库
-            db.createObjectStore(op.storeName, { keyPath: "id", autoIncrement: true });
-        }
-    };
-    request.onerror = (event) => {
-        console.warn(event);
-    };
-    request.onsuccess = (event) => {
-        db = request.result;
-        let trans = db.transaction([op.storeName], "readwrite");
-        let store = trans.objectStore(op.storeName);
-        let res = store.get(1);
-        res.onerror = () => {
-            console.warn("无法获取数据库");
-            db.close();
-        };
-        res.onsuccess = (ev) => __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            let valStr = (_a = res === null || res === void 0 ? void 0 : res.result) === null || _a === void 0 ? void 0 : _a.val;
-            if (!valStr) {
-                console.warn("无法获取数据库");
-                db.close();
-                return;
+    if (op.type == "indexedDB") {
+        request = window.indexedDB.open(op.dbName, op.version || 1);
+        request.onupgradeneeded = (event) => {
+            db = request.result;
+            if (!db.objectStoreNames.contains(op.storeName)) {
+                // 创建存储库
+                db.createObjectStore(op.storeName, { keyPath: "id", autoIncrement: true });
             }
-            let val = JSON.parse(valStr);
+        };
+        request.onerror = (event) => {
+            console.warn(event);
+        };
+        request.onsuccess = (event) => __awaiter(this, void 0, void 0, function* () {
+            db = request.result;
+            let val = yield getIndexedDBValFunc();
             let newVal = op.successCB(val);
-            yield setValFunc(newVal);
-            console.log("打完收工");
+            yield SetIndexedDBValFunc(newVal);
             db.close();
             if (op.finishCB) {
                 op.finishCB();
             }
         });
-    };
+    }
+    else {
+        let val = getLocalStorageValFunc();
+        let newVal = op.successCB(val);
+        setLocalStorageValFunc(newVal);
+        if (op.finishCB) {
+            op.finishCB();
+        }
+    }
 }
