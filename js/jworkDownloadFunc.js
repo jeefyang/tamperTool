@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         一键打包图片下载
+// @name         通用一键打包图片下载
 // @namespace    http://tampermonkey.net/
-// @version      0.8
-// @description  快速一键下载专用
+// @version      0.91
+// @description  通用快速一键下载专用
 // @author       jeef
 // @match        https://www.jimeilu.com/
 // @icon         https://www.google.com/s2/favicons?domain=telegra.ph
@@ -189,7 +189,48 @@
     }
 
     /** 
-     * @param {{name:string,imgList:string[],div:HTMLDivElement,multi:number,headers:any,isPrevDownload:boolean}} [config] 注解
+     * @param {string[]} [list] 注解
+     * @param {number} [multi]
+     */
+    let prevDownloaadFunc = async (list, multi) => {
+        if (!multi) {
+            multi = 1
+        }
+        let i = -1
+        let doneIndex = 0
+        displayDiv.innerHTML = `已经下载${doneIndex}/${list.length}`
+        return new Promise(async (res, rej) => {
+
+            let go = async () => {
+                multi--
+                i++
+                await fetchFunc(list[i], i)
+                doneIndex++
+                displayDiv.innerHTML = `已经下载${doneIndex}/${list.length}`
+                if (doneIndex == list.length) {
+                    res()
+                }
+                if (i == list.length - 1) {
+                    return
+                }
+                go()
+                return
+            }
+            for (let i = 0; i < multi; i++) {
+                go()
+            }
+        })
+    }
+
+    /** 
+     * @param {object} [config]
+     * @param {string} config.name 打包名称
+     * @param {string[]} config.imgList 图片链接
+     * @param {HTMLDivElement} config.div
+     * @param {number} config.multi 多线程
+     * @param {any} config.headers 提前下载专用
+     * @param {boolean} config.isPrevDownload 是否提前下载,为了解决跨域的问题
+     * @param {boolean} config.isClose 下载完是否关闭网页
      */
     unsafeWindow.jworkDownloadFunc = async (config) => {
 
@@ -209,17 +250,21 @@
             dbStoreName: "快速一键打包下载",
             dbDataTilte: document.title
         }
-        // 解决跨域下载问题,
-        if (op.isPrevDownload) {
+
+        // 解决跨域下载问题
+        if (config.isPrevDownload) {
             await initDBFunc()
-            for (let i = 0; i < len; i++) {
-                let url = list[i]
-                displayDiv.innerHTML = `正在下载${i + 1}/${len}`
-                await fetchFunc(url, i)
-            }
+            // for (let i = 0; i < len; i++) {
+            //     let url = list[i]
+            //     displayDiv.innerHTML = `正在下载${i + 1}/${len}`
+            //     await fetchFunc(url, i)
+            // }
+            await prevDownloaadFunc(list, multiLineLen)
         }
         backMain(() => {
-            window.close()
+            if (config.isClose) {
+                window.close()
+            }
         })
     }
 
